@@ -6,7 +6,7 @@ clear;
 disp('Loading lsl library...')
 lib = lsl_loadlib();
 
-Screen('Preference', 'SkipSyncTests', 1);
+%Screen('Preference', 'SkipSyncTests', 1);
 
 % Here we call some default settings for setting up Psychtoolbox
 PsychDefaultSetup(2);
@@ -56,10 +56,9 @@ lineWidthPix = 4;
 %--------- Experiment variables -------
 ObjectList = 1; %%%%%% IMPORTANT TO CHANGE FOR EVERY PARTICIPANT!!! %%%%%
 
-nTrialsPerObject = 5 ;
-nBlocks = 1;
-nPracticeTrials = 1;
-nObjects = 1;
+nTrialsPerObject = 1; %8
+nBlocks = 1; %7
+nObjects = 1; %4
 
 fixInterval = 3;
 executionTime = 5;
@@ -74,8 +73,20 @@ cylHeavy = 'cyl_heavy';
 sphereLight = 'sphere_light';
 sphereHeavy = 'sphere_heavy';
 
+inst_1 = 'Welcome, in this experiment you will be tasked with picking up one of four objects \n which will be presented in front of you. \n';
+inst_2 = 'Prior to the start you will be doing a small practice block to get used to the movement and the speed.\n';
+inst_3 = 'Please see the images below for instructions on how to grasp and execute the movement. \n';
+inst_4 = '\n When ready to start the practice, hit any key on the keyboard.\n';
+
+% 
+% objects = {cylLight, cylHeavy, sphereHeavy, sphereLight};
+% objectOrder = cell(1,nBlocks);
+% 
+% for i = 1:nBlocks
+%     objectOrder{i} = objects(randperm(length(objects)));
+% end
 disp(['Reading object order from file ' num2str(ObjectList) '...'])
-fileID = fopen(['ObjectList_' num2str(ObjectList) '.txt'], 'r');
+fileID = fopen([pwd '\ObjectOrder\ObjectList_' num2str(ObjectList) '.txt'], 'r');
 
 % Initialize an empty cell array to store the nested cells
 objectOrder = cell(1,nBlocks);
@@ -108,11 +119,12 @@ trialID = '';
 fixStart = 'fixation_start';
 fixEnd = 'fixation_end';
 movementStart = 'movement_start';
-
+%-- Add spacebar button to signal start of movement by participant --
 movementEnd = 'movement_end';
 breakStart = 'break_start';
 breakEnd = 'break_end';
 %-------------------------------------
+
 
 
 % Here we use to a waitframes number greater then 1 to flip at a rate not
@@ -123,7 +135,13 @@ function wf = waitframe(n,ifi)
     disp(wf)
 end
 
-% --- Begin Experiment --- %
+%--- Practice block with instructions --- %
+
+
+% ----------------------------------------- %
+
+
+% Flip outside of the loop to get a time stamp
 for block = 1:nBlocks
     DrawFormattedText(window, 'Press Any Key To Begin New Block',...
                 'center', 'center', white);
@@ -142,10 +160,10 @@ for block = 1:nBlocks
             if i == 1
                 DrawFormattedText(window, 'Press Any Key To Begin',...
                     'center', 'center', white);
-
                 vbl = Screen('Flip', window);
 
                 KbStrokeWait;
+                outlet.push_sample({[object 'start']})
             end
 
             % Screen 1: Create fixation cross for 3 seconds
@@ -155,27 +173,21 @@ for block = 1:nBlocks
             % Wait until break is finished to flip to next screen
             vbl = Screen('Flip', window, vbl + (waitframe(interTrialBreak,ifi) - 0.5) * ifi);
             outlet.push_sample({fixStart})
-
-            if i == 1
-                outlet.push_sample({[object 'start']})
-            end
       
                % Screen 2: Create execute movement screen for 5 sec
             DrawFormattedText(window, 'X',...
-                    'center', 'center', black);
+                    'center', 'center', white);
             disp('screen 2')
             % Wait until fixation is finished to flip to next screen
             vbl = Screen('Flip', window, vbl + (waitframe(fixInterval,ifi) - 0.5) * ifi);
             outlet.push_sample({movementStart})
-            outlet.push_sample({object})
-
 
             % Send marker when participant initiates and finishes movement
             waitTime = waitframe(executionTime, ifi);
             spacePressedSent = false;
-                         
+            
             startTime = GetSecs;
-            goalTime = startTime + 4.7;
+            goalTime = startTime + 4.50;
             while startTime < goalTime
                 [keyIsDown,secs, keyCode] = KbCheck;
                 if ~keyCode(spaceKey) & spacePressedSent == false
@@ -190,6 +202,21 @@ for block = 1:nBlocks
                 end
                 startTime = GetSecs;
             end
+            %{
+            while vbl < (vbl + (waitTime - 0.7)*ifi)
+                [keyIsDown,secs, keyCode] = KbCheck;
+                if ~keyCode('spaceKey') & spacePressedSent == false
+                    spacePressedSent = true;
+                    outlet.push_sample({'execution_started'})
+                    disp('execution started');
+                end
+                if keyCode('spaceKey') & spacePressedSent == true
+                    outlet.push_sample({'execution_finished'})
+                    disp('execution finished')
+                    break
+                end
+            end
+            %}
             
             % Screen 3: Create get ready screen 
             if i < nTrialsPerObject
