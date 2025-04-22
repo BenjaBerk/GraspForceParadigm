@@ -1,0 +1,7 @@
+sphere_light,cyl_light,cyl_light,sphere_light
+cyl_heavy,cyl_heavy,sphere_light,cyl_heavy
+cyl_heavy,cyl_heavy,sphere_light,cyl_light
+sphere_light,sphere_heavy,sphere_heavy,sphere_light
+sphere_heavy,sphere_heavy,sphere_heavy,sphere_light
+cyl_light,cyl_light,cyl_heavy,sphere_heavy
+cyl_light,sphere_heavy,cyl_heavy,cyl_light
